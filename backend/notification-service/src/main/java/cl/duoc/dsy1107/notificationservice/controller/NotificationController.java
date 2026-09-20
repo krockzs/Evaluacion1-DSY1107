@@ -1,0 +1,3 @@
+package cl.duoc.dsy1107.notificationservice.controller;
+import cl.duoc.dsy1107.notificationservice.entity.NotifyLog; import cl.duoc.dsy1107.notificationservice.repository.NotifyLogRepository; import org.springframework.web.bind.annotation.*; import java.util.List;
+@RestController @RequestMapping("/api/notifications") public class NotificationController { private final NotifyLogRepository repo; public NotificationController(NotifyLogRepository r){repo=r;} @GetMapping public List<NotifyLog> all(){return repo.findAllByOrderByCreatedAtDesc();} @GetMapping("/ot/{otId}") public List<NotifyLog> byOt(@PathVariable String otId){return repo.findByOtIdOrderByCreatedAtDesc(otId);} }
