@@ -16,8 +16,8 @@ Evaluacion1/
 │   └── notification-service/    # Consume RabbitMQ y persiste NOTIFY_LOG
 ├── frontend/
 │   └── pedidos360-web/          # Angular + MSAL
-└── database/
-    └── Script.sql               # Script oficial entregado
+└── Sql/
+    └── Script.sql               # Script SQL actual corregido
 ```
 
 ## Puertos locales
@@ -80,7 +80,7 @@ En AWS el API Gateway queda delante del BFF y valida el JWT en el borde. El BFF 
 
 ## Orden sugerido de ejecución local
 
-1. Ejecutar `database/Script.sql` en Oracle.
+1. Ejecutar `Sql/Script.sql` en Oracle.
 2. Tener Kafka y RabbitMQ disponibles.
 3. Levantar `ot-service`, `event-service`, `notification-service` y `bff-service`.
 4. Completar los valores de Microsoft Entra en `frontend/pedidos360-web/src/environments/environment.ts`.
