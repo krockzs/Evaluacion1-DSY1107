@@ -7,13 +7,13 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ENTRA_ISSUER_URI:https://login.microsoftonline.com/common/v2.0}
+          issuer-uri: ${ENTRA_ISSUER_URI:https://login.microsoftonline.com/fd84e3b6-0ea5-446b-90d7-e61602ef440e/v2.0}
 app:
   security:
-    audience: ${ENTRA_API_CLIENT_ID:CHANGE_ME_API_CLIENT_ID}
+    audience: ${ENTRA_API_CLIENT_ID:6c0395af-81cf-49dc-ab60-668d443ff0da}
   services:
     ot: ${OT_SERVICE_URL:http://localhost:8081}
     events: ${EVENT_SERVICE_URL:http://localhost:8082}
     notifications: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
   cors:
-    allowed-origin: ${FRONTEND_ORIGIN:http://localhost:4200}
+    allowed-origin: ${FRONTEND_ORIGIN:https://pedidos360-frontend-kes5se0tf0.s3.us-east-1.amazonaws.com}
