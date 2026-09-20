@@ -1,17 +1,8 @@
 --------------------------------------------------------------------------------
--- CREACIÓN DE USUARIO Y ESQUEMA BASE
+-- ESQUEMA SYSTEM / FREEPDB1
 --------------------------------------------------------------------------------
-
--- Crea el usuario de aplicación (ajustar contraseña si es necesario)
-CREATE USER TALLERPRO360 IDENTIFIED BY "12345678"
-  DEFAULT TABLESPACE USERS
-  TEMPORARY TABLESPACE TEMP
-  QUOTA UNLIMITED ON USERS;
-
-GRANT CREATE SESSION TO TALLERPRO360;
-GRANT CREATE TABLE, CREATE SEQUENCE, CREATE TRIGGER, CREATE VIEW, CREATE PROCEDURE TO TALLERPRO360;
-
-ALTER SESSION SET CURRENT_SCHEMA = TALLERPRO360;
+-- Este script se ejecuta conectado como SYSTEM a FREEPDB1.
+-- No crea usuarios ni cambia de esquema.
 
 --------------------------------------------------------------------------------
 -- SECUENCIAS
@@ -216,3 +207,5 @@ COMMIT;
 SELECT * FROM V_OT_RESUMEN ORDER BY CREATED_AT DESC;
 SELECT * FROM OT_EVENT ORDER BY CREATED_AT DESC FETCH FIRST 5 ROWS ONLY;
 SELECT * FROM NOTIFY_LOG ORDER BY CREATED_AT DESC FETCH FIRST 5 ROWS ONLY;
+
+EXIT;
