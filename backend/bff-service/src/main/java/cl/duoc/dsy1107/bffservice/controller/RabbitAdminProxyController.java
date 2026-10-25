@@ -20,7 +20,7 @@ import java.net.URI;
  * Rabbit Admin validará nuevamente el JWT antes de permitir operaciones reales.
  */
 @RestController
-public final class RabbitAdminProxyController {
+public class RabbitAdminProxyController {
     private final RestClient client;
     private final URI adminBase;
 
