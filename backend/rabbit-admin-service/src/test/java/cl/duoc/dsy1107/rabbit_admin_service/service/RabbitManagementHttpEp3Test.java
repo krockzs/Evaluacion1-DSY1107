@@ -43,8 +43,12 @@ class RabbitManagementHttpEp3Test {
             authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
             byte[] payload = responseJson.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(responseStatus, payload.length);
-            exchange.getResponseBody().write(payload);
+            if ((responseStatus == 201 || responseStatus == 204) && responseJson.isEmpty()) {
+                exchange.sendResponseHeaders(responseStatus, -1);
+            } else {
+                exchange.sendResponseHeaders(responseStatus, payload.length);
+                exchange.getResponseBody().write(payload);
+            }
         } finally { exchange.close(); }
     }
     @AfterEach void stop(){ if(server!=null) server.stop(0); }
@@ -66,6 +70,17 @@ class RabbitManagementHttpEp3Test {
         assertEquals("PUT",method.get());
         assertEquals("/api/queues/%2F/ot.test.queue",path.get());
         assertTrue(body.get().contains("\"durable\":true"));
+    }
+    @Test void crearColaCon201SinCuerpoEsExito() {
+        responseStatus=201;
+        responseJson="";
+        assertEquals(Map.of("status",201),admin.createQueue(new QueueRequest("ot.test.created",true)));
+        assertEquals("PUT",method.get());
+    }
+    @Test void crearColaCon204SinCuerpoEsExito() {
+        responseStatus=204;
+        responseJson="";
+        assertEquals(Map.of("status",204),admin.createQueue(new QueueRequest("ot.test.exists",true)));
     }
     @Test void publicarEnvíaJsonAlExchange() {
         admin.publish(new PublishRequest("ot.notifications.exchange","ot.created","{\"type\":\"demo\"}"));
