@@ -19,7 +19,17 @@ public class RabbitAdminService {
     }
     public Object listQueues(){return api.call("GET",queues(),null);}
     public Object queue(String name){validName(name);return api.call("GET",queues()+"/"+enc(name),null);}
-    public Object createQueue(QueueRequest r){validName(r.name());return api.call("PUT",queues()+"/"+enc(r.name()),Map.of("durable",r.durable(),"auto_delete",false,"arguments",Map.of()));}
+    public Object createQueue(QueueRequest r){
+        validName(r.name());
+        String path=queues()+"/"+enc(r.name());
+        try {
+            Object existing=api.call("GET",path,null);
+            return Map.of("status",200,"created",false,"message","La cola ya existe; se conservó su configuración","queue",existing);
+        } catch (RabbitManagementClient.RabbitAdminUpstreamException ex) {
+            if(ex.status!=404) throw ex;
+        }
+        return api.call("PUT",path,Map.of("durable",r.durable(),"auto_delete",false,"arguments",Map.of()));
+    }
     public Object deleteQueue(String name){validName(name);return api.call("DELETE",queues()+"/"+enc(name),null);}
     public Object listExchanges(){return api.call("GET",exchanges(),null);}
     public Object createExchange(ExchangeRequest r){validName(r.name());return api.call("PUT",exchanges()+"/"+enc(r.name()),Map.of("type",r.type(),"durable",r.durable(),"auto_delete",false,"internal",false,"arguments",Map.of()));}
