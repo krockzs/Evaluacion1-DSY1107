@@ -67,7 +67,7 @@ public class SecurityConfig {
             JwtAuthenticationConverter converter) throws Exception {
         return http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/admin", "/api/admin/**").hasRole("TALLER_ADMIN")
+                        .requestMatchers("/api/admin", "/api/admin/**").authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
                 .build();
