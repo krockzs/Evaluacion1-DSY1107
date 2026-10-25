@@ -9,6 +9,7 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.dao.RecoverableDataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -46,7 +47,7 @@ public class NotificationConsumer {
                     channel.basicAck(deliveryTag, false);
                     log.info("Notification persisted and ACK sent; deliveryTag={}", deliveryTag);
                     return;
-                } catch (TransientDataAccessException | RecoverableDataAccessException recoverable) {
+                } catch (TransientDataAccessException | RecoverableDataAccessException | DataAccessResourceFailureException recoverable) {
                     if (attempt == 3) throw recoverable;
                     log.warn("Transient Oracle error, retry {}/3; deliveryTag={}", attempt + 1, deliveryTag, recoverable);
                     try {
