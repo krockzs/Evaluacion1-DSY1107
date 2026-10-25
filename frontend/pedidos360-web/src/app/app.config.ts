@@ -1,5 +1,5 @@
 import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withHashLocation } from '@angular/router';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import {
   MsalBroadcastService,
@@ -15,7 +15,7 @@ import { msalGuardConfig, msalInstance, msalInterceptorConfig } from './msal.con
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes),
+    provideRouter(routes, withHashLocation()),
     provideHttpClient(withInterceptorsFromDi()),
     { provide: MSAL_INSTANCE, useFactory: msalInstance },
     { provide: MSAL_GUARD_CONFIG, useFactory: msalGuardConfig },
