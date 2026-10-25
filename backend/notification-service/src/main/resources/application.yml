@@ -16,6 +16,11 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.OracleDialect
   rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: manual
+        default-requeue-rejected: false
+        prefetch: 10
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
@@ -25,3 +30,6 @@ app:
     exchange: ${OT_NOTIFICATION_EXCHANGE:ot.notifications.exchange}
     queue: ${OT_NOTIFICATION_QUEUE:ot.notifications.queue}
     routing-key: ${OT_NOTIFICATION_ROUTING_KEY:ot.created}
+    dead-letter-exchange: ${OT_NOTIFICATION_DLX:ot.notifications.dlx}
+    dead-letter-queue: ${OT_NOTIFICATION_DLQ:ot.notifications.dlq}
+    dead-letter-routing-key: ${OT_NOTIFICATION_DLQ_ROUTING_KEY:ot.failed}

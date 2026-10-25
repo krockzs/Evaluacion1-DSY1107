@@ -15,5 +15,6 @@ app:
     ot: ${OT_SERVICE_URL:http://localhost:8081}
     events: ${EVENT_SERVICE_URL:http://localhost:8082}
     notifications: ${NOTIFICATION_SERVICE_URL:http://localhost:8083}
+    rabbit-admin: ${RABBIT_ADMIN_URL:http://127.0.0.1:8084}
   cors:
     allowed-origin: ${FRONTEND_ORIGIN:https://pedidos360-frontend-kes5se0tf0.s3.us-east-1.amazonaws.com}
