@@ -6,7 +6,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,7 +15,7 @@ import org.springframework.web.client.RestClient;
 
 import java.net.URI;
 
-/** Proxy del panel Rabbit Admin. El BFF valida issuer/audience y exige TALLER_ADMIN.
+/** Proxy del panel Rabbit Admin. El BFF valida issuer/audience para cualquier usuario autenticado.
  * Rabbit Admin validará nuevamente el JWT antes de permitir operaciones reales.
  */
 @RestController
@@ -34,7 +33,6 @@ public class RabbitAdminProxyController {
     }
 
     @RequestMapping(path = {"/api/admin", "/api/admin/**"})
-    @PreAuthorize("hasRole('TALLER_ADMIN')")
     public ResponseEntity<String> forward(HttpServletRequest request,
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody(required = false) String body) {
