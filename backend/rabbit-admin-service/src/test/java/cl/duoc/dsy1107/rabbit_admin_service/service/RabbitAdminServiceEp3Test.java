@@ -48,9 +48,17 @@ class RabbitAdminServiceEp3Test {
         verify(client).call("GET", "api/exchanges/%2F", null);
     }
     @Test void createExchange() {
+        when(client.call("GET", "api/exchanges/%2F/test.ex", null)).thenThrow(new RabbitManagementClient.RabbitAdminUpstreamException(404,"not found"));
         service.createExchange(new ExchangeRequest("test.ex", "direct", true));
         verify(client).call("PUT", "api/exchanges/%2F/test.ex",
           Map.of("type","direct","durable",true,"auto_delete",false,"internal",false,"arguments",Map.of()));
+    }
+    @Test void existingExchangeIsNotRedeclared() {
+        when(client.call("GET", "api/exchanges/%2F/ot.notifications.exchange", null))
+            .thenReturn(Map.of("name","ot.notifications.exchange","type","direct"));
+        Object result=service.createExchange(new ExchangeRequest("ot.notifications.exchange","direct",true));
+        assertEquals(false,((Map<?,?>)result).get("created"));
+        verify(client,never()).call(eq("PUT"),anyString(),any());
     }
     @Test void deleteExchange() {
         service.deleteExchange("test.ex");
