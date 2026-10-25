@@ -19,9 +19,16 @@ class RabbitAdminServiceEp3Test {
         verify(client).call("GET", "api/queues/%2F/cola.test", null);
     }
     @Test void createQueue() {
+        when(client.call("GET","api/queues/%2F/cola.prueba",null)).thenThrow(new RabbitManagementClient.RabbitAdminUpstreamException(404,"not found"));
         service.createQueue(new QueueRequest("cola.prueba", true));
         verify(client).call("PUT", "api/queues/%2F/cola.prueba",
           Map.of("durable", true, "auto_delete", false, "arguments", Map.of()));
+    }
+    @Test void existingQueueIsNotRedeclared() {
+        when(client.call("GET","api/queues/%2F/ot.notifications.queue",null)).thenReturn(Map.of("name","ot.notifications.queue"));
+        Object result=service.createQueue(new QueueRequest("ot.notifications.queue",true));
+        assertEquals(false,((Map<?,?>)result).get("created"));
+        verify(client,never()).call(eq("PUT"),anyString(),any());
     }
     @Test void deleteQueue() {
         service.deleteQueue("cola.prueba");
