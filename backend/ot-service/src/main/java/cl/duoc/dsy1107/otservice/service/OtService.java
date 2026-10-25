@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Year;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import java.util.List;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -68,9 +70,11 @@ public class OtService {
         ot.setTotal(request.total());
         Ot saved = otRepository.saveAndFlush(ot);
 
-        kafkaTemplate.send(topic, saved.getOtId(), new OtEventMessage("OtCreada", saved.getOtId(), saved.getClienteId(), saved.getTotal()));
-        rabbitTemplate.convertAndSend(exchange, routingKey,
-            new NotificationMessage("NotificarClienteOtCreada", saved.getOtId(), saved.getClienteId(), "email"));
+        publishAfterCommit(() -> {
+            kafkaTemplate.send(topic, saved.getOtId(), new OtEventMessage("OtCreada", saved.getOtId(), saved.getClienteId(), saved.getTotal()));
+            rabbitTemplate.convertAndSend(exchange, routingKey,
+                new NotificationMessage("NotificarClienteOtCreada", saved.getOtId(), saved.getClienteId(), "email"));
+        });
         return saved;
     }
 
@@ -82,7 +86,7 @@ public class OtService {
         if (request.descripcion() != null) ot.setDescripcion(request.descripcion());
         if (request.total() != null) ot.setTotal(request.total());
         Ot saved = otRepository.saveAndFlush(ot);
-        kafkaTemplate.send(topic, saved.getOtId(), new OtEventMessage("OtActualizada", saved.getOtId(), saved.getClienteId(), saved.getTotal()));
+        publishAfterCommit(() -> kafkaTemplate.send(topic, saved.getOtId(), new OtEventMessage("OtActualizada", saved.getOtId(), saved.getClienteId(), saved.getTotal())));
         return saved;
     }
 
@@ -90,7 +94,7 @@ public class OtService {
     public void eliminar(String id) {
         Ot ot = obtener(id);
         otRepository.delete(ot);
-        kafkaTemplate.send(topic, id, new OtEventMessage("OtEliminada", id, ot.getClienteId(), ot.getTotal()));
+        publishAfterCommit(() -> kafkaTemplate.send(topic, id, new OtEventMessage("OtEliminada", id, ot.getClienteId(), ot.getTotal())));
     }
 
     @Transactional
@@ -102,7 +106,7 @@ public class OtService {
         item.setCantidad(request.cantidad());
         item.setPrecioUnit(request.precioUnit());
         OtItem saved = itemRepository.saveAndFlush(item);
-        kafkaTemplate.send(topic, otId, new OtEventMessage("ItemAgregado", otId, null, saved.getSubtotal()));
+        publishAfterCommit(() -> kafkaTemplate.send(topic, otId, new OtEventMessage("ItemAgregado", otId, null, saved.getSubtotal())));
         return saved;
     }
 
@@ -112,6 +116,22 @@ public class OtService {
         OtItem item = itemRepository.findById(itemId).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Ítem no encontrado"));
         if (!otId.equals(item.getOtId())) throw new ResponseStatusException(NOT_FOUND, "Ítem no pertenece a la OT");
         itemRepository.delete(item);
-        kafkaTemplate.send(topic, otId, new OtEventMessage("ItemEliminado", otId, null, null));
+        publishAfterCommit(() -> kafkaTemplate.send(topic, otId, new OtEventMessage("ItemEliminado", otId, null, null)));
+    }
+    /**
+     * Nunca publicar un evento de una operación de Oracle que termine en rollback.
+     * No ofrece entrega garantizada si el broker falla tras el commit; eso requiere outbox.
+     */
+    private static void publishAfterCommit(Runnable publication) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()
+                && TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() {
+                    publication.run();
+                }
+            });
+        } else {
+            publication.run();
+        }
     }
 }
