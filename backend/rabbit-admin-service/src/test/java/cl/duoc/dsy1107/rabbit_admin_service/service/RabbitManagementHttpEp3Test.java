@@ -25,6 +25,7 @@ class RabbitManagementHttpEp3Test {
     private final AtomicReference<String> body = new AtomicReference<>();
     private final AtomicReference<String> authorization = new AtomicReference<>();
     private volatile int responseStatus = 200;
+    private volatile boolean queueAbsent = false;
     private volatile String responseJson = "{}";
 
     @BeforeEach void start() throws Exception {
@@ -43,10 +44,11 @@ class RabbitManagementHttpEp3Test {
             authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
             byte[] payload = responseJson.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
-            if ((responseStatus == 201 || responseStatus == 204) && responseJson.isEmpty()) {
-                exchange.sendResponseHeaders(responseStatus, -1);
+            int actualStatus = queueAbsent && exchange.getRequestMethod().equals("GET") && exchange.getRequestURI().getRawPath().startsWith("/api/queues/%2F/") ? 404 : responseStatus;
+            if ((actualStatus == 201 || actualStatus == 204) && responseJson.isEmpty()) {
+                exchange.sendResponseHeaders(actualStatus, -1);
             } else {
-                exchange.sendResponseHeaders(responseStatus, payload.length);
+                exchange.sendResponseHeaders(actualStatus, payload.length);
                 exchange.getResponseBody().write(payload);
             }
         } finally { exchange.close(); }
@@ -66,18 +68,21 @@ class RabbitManagementHttpEp3Test {
         assertEquals("/api/queues/%2F/ot.notifications.queue", path.get());
     }
     @Test void crearColaRealizaPutConPayload() {
+        queueAbsent=true;
         admin.createQueue(new QueueRequest("ot.test.queue",true));
         assertEquals("PUT",method.get());
         assertEquals("/api/queues/%2F/ot.test.queue",path.get());
         assertTrue(body.get().contains("\"durable\":true"));
     }
     @Test void crearColaCon201SinCuerpoEsExito() {
+        queueAbsent=true;
         responseStatus=201;
         responseJson="";
         assertEquals(Map.of("status",201),admin.createQueue(new QueueRequest("ot.test.created",true)));
         assertEquals("PUT",method.get());
     }
     @Test void crearColaCon204SinCuerpoEsExito() {
+        queueAbsent=true;
         responseStatus=204;
         responseJson="";
         assertEquals(Map.of("status",204),admin.createQueue(new QueueRequest("ot.test.exists",true)));
