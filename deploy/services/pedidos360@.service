@@ -1,0 +1,19 @@
+[Unit]
+Description=Pedidos360 backend %i
+Wants=network-online.target
+After=network-online.target pedidos360-kafka.service rabbitmq-server.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu
+EnvironmentFile=/etc/pedidos360/backend.env
+ExecStart=/usr/bin/java -Xms64m -Xmx320m -XX:MaxMetaspaceSize=160m -jar /home/ubuntu/pedidos360-jars/%i.jar
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
