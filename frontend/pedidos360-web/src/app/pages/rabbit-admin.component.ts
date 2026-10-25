@@ -27,7 +27,7 @@ type Tab = 'queues' | 'exchanges' | 'bindings' | 'messages' | 'tests';
   template: `
     <section class="admin">
       <h1>RabbitMQ — Consola administrativa</h1>
-      <p class="warning">Administración reservada a usuarios autorizados. El BFF debe habilitar las rutas con permisos de administrador antes de utilizarlas en AWS.</p>
+      <p class="warning">Acceso mediante Microsoft Entra ID. Las operaciones realizadas aquí modifican RabbitMQ en AWS.</p>
       <div class="tabs">
         <button type="button" *ngFor="let item of tabs" [class.active]="tab === item.id" (click)="tab=item.id">{{item.title}}</button>
       </div>
@@ -100,7 +100,7 @@ export class RabbitAdminComponent {
     this.error=''; this.busy=true;
     call.pipe(finalize(()=>this.busy=false)).subscribe({
       next: value => this.output=JSON.stringify(value,null,2) ?? 'Operación completada',
-      error: err => { this.error=`Solicitud fallida (HTTP ${err.status ?? 'desconocido'}). ${err.status === 403 ? 'Permiso TALLER_ADMIN requerido.' : err.status === 401 ? 'Sesión inválida o expirada.' : err.status === 502 || err.status === 503 ? 'RabbitMQ no disponible.' : 'Revisar respuesta del servidor.'}`; this.output=JSON.stringify(err.error ?? {},null,2); }
+      error: err => { this.error=`Solicitud fallida (HTTP ${err.status ?? 'desconocido'}). ${err.status === 403 ? 'Operación rechazada por la política de autorización.' : err.status === 401 ? 'Sesión inválida o expirada.' : err.status === 502 || err.status === 503 ? 'RabbitMQ no disponible.' : 'Revisar respuesta del servidor.'}`; this.output=JSON.stringify(err.error ?? {},null,2); }
     });
   }
   publish(): void {
