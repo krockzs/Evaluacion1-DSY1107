@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: rabbit-admin-service
+
+server:
+  port: 8084
+app:
+  rabbit-admin:
+    management-url: ${RABBITMQ_MANAGEMENT_URL:http://127.0.0.1:15672/}
+    username: ${RABBITMQ_ADMIN_USERNAME:guest}
+    password: ${RABBITMQ_ADMIN_PASSWORD:guest}
+    vhost: ${RABBITMQ_VHOST:/}
+# 4G: identificación del tenant y recurso Entra ID. Configurar los valores reales al integrar.
+  security:
+    issuer: ${ENTRA_ISSUER_URI:https://login.microsoftonline.com/common/v2.0}
+    jwk-set-uri: ${ENTRA_JWK_SET_URI:https://login.microsoftonline.com/common/discovery/v2.0/keys}
+    audience: ${ENTRA_API_CLIENT_ID:CHANGE_ME_API_CLIENT_ID}

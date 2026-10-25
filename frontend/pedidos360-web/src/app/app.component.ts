@@ -14,6 +14,7 @@ import { MsalService } from '@azure/msal-angular';
         <a routerLink="/">Inicio</a>
         <a *ngIf="loggedIn" routerLink="/ots">Órdenes</a>
         <a *ngIf="loggedIn" routerLink="/ots/nueva">Nueva OT</a>
+        <a *ngIf="isRabbitAdmin" routerLink="/rabbit-admin">Rabbit Admin</a>
       </nav>
       <div>
         <button *ngIf="!loggedIn" (click)="login()">Ingresar con Microsoft</button>
@@ -45,6 +46,12 @@ export class AppComponent implements OnInit {
       },
       error: err => console.error(err)
     });
+  }
+
+  get isRabbitAdmin(): boolean {
+    const account = this.msal.instance.getActiveAccount() ?? this.msal.instance.getAllAccounts()[0];
+    const roles = account?.idTokenClaims?.roles;
+    return this.loggedIn && Array.isArray(roles) && roles.includes('TALLER_ADMIN');
   }
 
   refresh() {
