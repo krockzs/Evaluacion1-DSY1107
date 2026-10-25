@@ -95,7 +95,7 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("TALLER_ADMIN")
+                        .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -108,7 +108,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    CorsConfigurationSource cors(
+    CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origin}") String origin
     ) {
         CorsConfiguration configuration =
