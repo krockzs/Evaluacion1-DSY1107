@@ -1,0 +1,16 @@
+[Unit]
+Description=Pedidos360 Oracle DB - existing rootless Podman container
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/podman start --attach oracle-free-lite
+ExecStop=/usr/bin/podman stop -t 120 oracle-free-lite
+Restart=on-failure
+RestartSec=15
+TimeoutStartSec=300
+TimeoutStopSec=150
+
+[Install]
+WantedBy=default.target
