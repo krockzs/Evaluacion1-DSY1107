@@ -1,0 +1,20 @@
+[Unit]
+Description=Pedidos360 Kafka 4.3 KRaft (local broker)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+Environment="KAFKA_HEAP_OPTS=-Xms256m -Xmx384m"
+Environment="KAFKA_JVM_PERFORMANCE_OPTS=-server -XX:+UseG1GC"
+ExecStart=/opt/kafka/bin/kafka-server-start.sh /etc/kafka/pedidos360.properties
+ExecStop=/opt/kafka/bin/kafka-server-stop.sh
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target
