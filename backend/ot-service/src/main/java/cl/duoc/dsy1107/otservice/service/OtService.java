@@ -86,7 +86,7 @@ public class OtService {
         if (request.descripcion() != null) ot.setDescripcion(request.descripcion());
         if (request.total() != null) ot.setTotal(request.total());
         Ot saved = otRepository.saveAndFlush(ot);
-        publishAfterCommit(() -> kafkaTemplate.send(topic, saved.getOtId(), new OtEventMessage("OtActualizada", saved.getOtId(), saved.getClienteId(), saved.getTotal())););
+        publishAfterCommit(() -> kafkaTemplate.send(topic, saved.getOtId(), new OtEventMessage("OtActualizada", saved.getOtId(), saved.getClienteId(), saved.getTotal())));
         return saved;
     }
 
@@ -94,7 +94,7 @@ public class OtService {
     public void eliminar(String id) {
         Ot ot = obtener(id);
         otRepository.delete(ot);
-        publishAfterCommit(() -> kafkaTemplate.send(topic, id, new OtEventMessage("OtEliminada", id, ot.getClienteId(), ot.getTotal())););
+        publishAfterCommit(() -> kafkaTemplate.send(topic, id, new OtEventMessage("OtEliminada", id, ot.getClienteId(), ot.getTotal())));
     }
 
     @Transactional
@@ -106,7 +106,7 @@ public class OtService {
         item.setCantidad(request.cantidad());
         item.setPrecioUnit(request.precioUnit());
         OtItem saved = itemRepository.saveAndFlush(item);
-        publishAfterCommit(() -> kafkaTemplate.send(topic, otId, new OtEventMessage("ItemAgregado", otId, null, saved.getSubtotal())););
+        publishAfterCommit(() -> kafkaTemplate.send(topic, otId, new OtEventMessage("ItemAgregado", otId, null, saved.getSubtotal())));
         return saved;
     }
 
@@ -116,7 +116,7 @@ public class OtService {
         OtItem item = itemRepository.findById(itemId).orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Ítem no encontrado"));
         if (!otId.equals(item.getOtId())) throw new ResponseStatusException(NOT_FOUND, "Ítem no pertenece a la OT");
         itemRepository.delete(item);
-        publishAfterCommit(() -> kafkaTemplate.send(topic, otId, new OtEventMessage("ItemEliminado", otId, null, null)););
+        publishAfterCommit(() -> kafkaTemplate.send(topic, otId, new OtEventMessage("ItemEliminado", otId, null, null)));
     }
     /**
      * Nunca publicar un evento de una operación de Oracle que termine en rollback.
