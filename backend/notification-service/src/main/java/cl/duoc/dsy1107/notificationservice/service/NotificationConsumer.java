@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
+import org.springframework.dao.TransientDataAccessException;
+import org.springframework.dao.RecoverableDataAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -31,22 +33,35 @@ public class NotificationConsumer {
             @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) throws IOException {
         try {
             validate(message);
-            NotifyLog notification = new NotifyLog();
-            notification.setOtId(message.otId());
-            notification.setClienteId(message.clienteId());
-            notification.setCanal(message.canal());
-            notification.setPayloadJson(mapper.writeValueAsString(message));
-            // saveAndFlush termina la transacción del repositorio antes de confirmar el broker.
-            repo.saveAndFlush(notification);
+            String payloadJson = mapper.writeValueAsString(message);
+            // Reintentos locales acotados: sin requeue del broker ni ciclos infinitos.
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    NotifyLog notification = new NotifyLog();
+                    notification.setOtId(message.otId());
+                    notification.setClienteId(message.clienteId());
+                    notification.setCanal(message.canal());
+                    notification.setPayloadJson(payloadJson);
+                    repo.saveAndFlush(notification);
+                    channel.basicAck(deliveryTag, false);
+                    log.info("Notification persisted and ACK sent; deliveryTag={}", deliveryTag);
+                    return;
+                } catch (TransientDataAccessException | RecoverableDataAccessException recoverable) {
+                    if (attempt == 3) throw recoverable;
+                    log.warn("Transient Oracle error, retry {}/3; deliveryTag={}", attempt + 1, deliveryTag, recoverable);
+                    try {
+                        Thread.sleep(100L * attempt);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Notification retry interrupted", interrupted);
+                    }
+                }
+            }
         } catch (JsonProcessingException | RuntimeException error) {
             log.error("Notification failed; deliveryTag={} -> DLQ (NACK, requeue=false)",
                     deliveryTag, error);
             channel.basicNack(deliveryTag, false, false);
-            return;
         }
-        // Si la confirmación falla, la excepción se propaga: no reenviar otro NACK.
-        channel.basicAck(deliveryTag, false);
-        log.info("Notification persisted and ACK sent; deliveryTag={}", deliveryTag);
     }
 
     private static void validate(NotificationMessage message) {
