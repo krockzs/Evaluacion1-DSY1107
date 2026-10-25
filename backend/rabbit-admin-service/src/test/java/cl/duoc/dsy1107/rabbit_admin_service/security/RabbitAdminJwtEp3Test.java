@@ -26,10 +26,11 @@ class RabbitAdminJwtEp3Test {
         mvc.perform(get("/api/admin/queues")).andExpect(status().isUnauthorized());
         verifyNoInteractions(service);
     }
-    @Test void loggedInWithoutAdminRoleIsForbidden() throws Exception {
+    @Test void authenticatedUserWithoutAdminRoleCanListQueues() throws Exception {
+        when(service.listQueues()).thenReturn(List.of());
         mvc.perform(get("/api/admin/queues").with(jwt().authorities(new SimpleGrantedAuthority("SCOPE_ot.read"))))
-                .andExpect(status().isForbidden());
-        verifyNoInteractions(service);
+                .andExpect(status().isOk());
+        verify(service).listQueues();
     }
     @Test void adminCanListQueues() throws Exception {
         when(service.listQueues()).thenReturn(List.of(Map.of("name", "demo")));
@@ -37,19 +38,17 @@ class RabbitAdminJwtEp3Test {
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].name").value("demo"));
         verify(service).listQueues();
     }
-    @Test void nonAdminCannotPublish() throws Exception {
+    @Test void authenticatedUserCanPublish() throws Exception {
         mvc.perform(post("/api/admin/publish")
                 .with(jwt().authorities(new SimpleGrantedAuthority("SCOPE_ot.write")))
                 .contentType("application/json")
                 .content("{\"exchange\":\"demo\",\"routingKey\":\"test\",\"payload\":\"{}\"}"))
-                .andExpect(status().isForbidden());
-        verifyNoInteractions(service);
+                .andExpect(status().isOk());
     }
-    @Test void nonAdminCannotDelete() throws Exception {
+    @Test void authenticatedUserCanDelete() throws Exception {
         mvc.perform(delete("/api/admin/queues/demo")
                 .with(jwt().authorities(new SimpleGrantedAuthority("SCOPE_ot.write"))))
-                .andExpect(status().isForbidden());
-        verifyNoInteractions(service);
+                .andExpect(status().isOk());
     }
     @Test void unrelatedEndpointRemainsDeniedToAdmin() throws Exception {
         mvc.perform(get("/unrelated").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_TALLER_ADMIN"))))
