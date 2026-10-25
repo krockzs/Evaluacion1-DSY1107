@@ -10,11 +10,14 @@ import java.time.Duration;
 import java.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
 /** API HTTP management de RabbitMQ: sin exponer credenciales al navegador. */
 @Component
 public class RabbitManagementClient {
+    private static final Logger log = LoggerFactory.getLogger(RabbitManagementClient.class);
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
     private final ObjectMapper json;
     private final URI base;
@@ -44,7 +47,11 @@ public class RabbitManagementClient {
                 throw new RabbitAdminUpstreamException(resp.statusCode(), "RabbitMQ Management HTTP "+resp.statusCode());
             return resp.body().isBlank() ? java.util.Map.of("status", resp.statusCode()) : json.readValue(resp.body(), Object.class);
         } catch(RabbitAdminUpstreamException ex) { throw ex; }
-          catch(Exception ex) { throw new RabbitAdminUpstreamException(502,"No fue posible contactar RabbitMQ Management",ex); }
+          catch(Exception ex) {
+              log.error("RabbitMQ Management fallo: method={}, path={}, exception={}: {}", method, path,
+                  ex.getClass().getSimpleName(), ex.getMessage(), ex);
+              throw new RabbitAdminUpstreamException(502,"No fue posible contactar RabbitMQ Management",ex);
+          }
     }
     public static final class RabbitAdminUpstreamException extends RuntimeException {
         public final int status;
