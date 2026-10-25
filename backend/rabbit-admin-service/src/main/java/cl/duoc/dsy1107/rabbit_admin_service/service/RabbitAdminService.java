@@ -32,7 +32,17 @@ public class RabbitAdminService {
     }
     public Object deleteQueue(String name){validName(name);return api.call("DELETE",queues()+"/"+enc(name),null);}
     public Object listExchanges(){return api.call("GET",exchanges(),null);}
-    public Object createExchange(ExchangeRequest r){validName(r.name());return api.call("PUT",exchanges()+"/"+enc(r.name()),Map.of("type",r.type(),"durable",r.durable(),"auto_delete",false,"internal",false,"arguments",Map.of()));}
+    public Object createExchange(ExchangeRequest r){
+        validName(r.name());
+        String path=exchanges()+"/"+enc(r.name());
+        try {
+            Object existing=api.call("GET",path,null);
+            return Map.of("status",200,"created",false,"message","El exchange ya existe; se conservó su configuración","exchange",existing);
+        } catch (RabbitManagementClient.RabbitAdminUpstreamException ex) {
+            if(ex.status!=404) throw ex;
+        }
+        return api.call("PUT",path,Map.of("type",r.type(),"durable",r.durable(),"auto_delete",false,"internal",false,"arguments",Map.of()));
+    }
     public Object deleteExchange(String name){validName(name);return api.call("DELETE",exchanges()+"/"+enc(name),null);}
     public Object listBindings(){return api.call("GET","api/bindings/"+vhost,null);}
     public Object createBinding(BindingRequest r){validName(r.source());validName(r.destination());return api.call("POST","api/bindings/"+vhost+"/e/"+enc(r.source())+"/q/"+enc(r.destination()),Map.of("routing_key",r.routingKey(),"arguments",Map.of()));}
