@@ -6,6 +6,7 @@ import cl.duoc.dsy1107.notificationservice.repository.NotifyLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessResourceFailureException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -36,6 +37,27 @@ class NotificationConsumerEp3Test {
         consumer.consume(new NotificationMessage("NotificarClienteOtCreada", "", "CLI-1", "email"), channel, 19L);
         verifyNoInteractions(repo);
         verify(channel).basicNack(19L, false, false);
+        verify(channel, never()).basicAck(anyLong(), anyBoolean());
+    }
+
+    @Test
+    void transientOracleFailureRetriesAndThenAcknowledges() throws Exception {
+        when(repo.saveAndFlush(any(NotifyLog.class)))
+                .thenThrow(new DataAccessResourceFailureException("temporary"))
+                .thenReturn(new NotifyLog());
+        consumer.consume(new NotificationMessage("NotificarClienteOtCreada", "OT-1", "CLI-1", "email"), channel, 20L);
+        verify(repo, times(2)).saveAndFlush(any(NotifyLog.class));
+        verify(channel).basicAck(20L, false);
+        verify(channel, never()).basicNack(anyLong(), anyBoolean(), anyBoolean());
+    }
+
+    @Test
+    void exhaustedTransientOracleFailureIsSentToDlq() throws Exception {
+        when(repo.saveAndFlush(any(NotifyLog.class)))
+                .thenThrow(new DataAccessResourceFailureException("temporary"));
+        consumer.consume(new NotificationMessage("NotificarClienteOtCreada", "OT-1", "CLI-1", "email"), channel, 21L);
+        verify(repo, times(3)).saveAndFlush(any(NotifyLog.class));
+        verify(channel).basicNack(21L, false, false);
         verify(channel, never()).basicAck(anyLong(), anyBoolean());
     }
 }
