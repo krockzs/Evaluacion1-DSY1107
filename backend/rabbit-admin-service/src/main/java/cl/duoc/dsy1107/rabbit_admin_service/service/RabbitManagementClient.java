@@ -18,7 +18,7 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class RabbitManagementClient {
     private static final Logger log = LoggerFactory.getLogger(RabbitManagementClient.class);
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+    private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(3)).build();
     private final ObjectMapper json;
     private final URI base;
     private final String auth;
