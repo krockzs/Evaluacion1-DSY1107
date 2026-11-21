@@ -62,21 +62,21 @@ set -Eeuo pipefail
 TOKEN=$(curl -fsS -m 5 -X PUT \
   -H "X-aws-ec2-metadata-token-ttl-seconds: 60" \
   http://169.254.169.254/latest/api/token)
-ID=$(curl -fsS -m 5 \
+EC2_INSTANCE_ID=$(curl -fsS -m 5 \
   -H "X-aws-ec2-metadata-token: $TOKEN" \
   http://169.254.169.254/latest/meta-data/instance-id)
-[[ "$ID" == "i-0e3af62685c90f028" ]] || {
+[[ "$EC2_INSTANCE_ID" == "i-0e3af62685c90f028" ]] || {
   echo "ERROR: identidad EC2 Monitoring incorrecta"; exit 1;
 }
 sudo -n true
 . /etc/os-release
-[[ "$ID" == "i-0e3af62685c90f028" && "$VERSION_ID" == "24.04" ]] || {
+[[ "$ID" == "ubuntu" && "$VERSION_ID" == "24.04" ]] || {
   echo "ERROR: sistema operativo no esperado"; exit 1;
 }
 [[ "$(dpkg --print-architecture)" == "amd64" ]] || {
   echo "ERROR: arquitectura diferente de amd64"; exit 1;
 }
-echo "INSTANCIA_VERIFICADA=$ID"
+echo "INSTANCIA_VERIFICADA=$EC2_INSTANCE_ID"
 echo "UBUNTU_VERSION=$VERSION_ID"
 
 echo
