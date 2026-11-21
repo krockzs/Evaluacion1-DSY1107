@@ -131,6 +131,7 @@ echo "SOLO_GRAFANA_RECREADA=OK"
 
 python3 - <<'PY_GRAFANA'
 import base64
+import http.client
 import json
 import pathlib
 import time
@@ -158,7 +159,10 @@ for attempt in range(1,31):
     try:
         loaded=fetch(endpoint)
         break
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
+    except (urllib.error.HTTPError, urllib.error.URLError,
+            http.client.RemoteDisconnected, ConnectionResetError,
+            ConnectionAbortedError, ConnectionRefusedError,
+            TimeoutError, OSError):
         if attempt%5==0:
             print("ESPERANDO_GRAFANA_PANEL_INTENTO={}/30".format(attempt))
         time.sleep(2)
