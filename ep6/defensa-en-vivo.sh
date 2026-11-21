@@ -167,12 +167,12 @@ abrir_interfaces() {
   echo "GRAFANA=http://127.0.0.1:3000/d/dsy1107-kafka-ep5"
   echo "GRAFANA_USUARIO=admin"
   echo "La clave no se imprime ni almacena en el informe."
-  if command -v xclip >/dev/null 2>&1; then
+  if [[ -n "$(printenv DISPLAY 2>/dev/null || true)" ]] && command -v xclip >/dev/null 2>&1; then
     ssh -n -F "$CFG" monitoring \
       'cat /home/ubuntu/dsy1107-ep5/monitoring/secrets/grafana_password.txt' |
       xclip -selection clipboard
     echo "GRAFANA_CLAVE=PORTAPAPELES"
-  elif command -v xsel >/dev/null 2>&1; then
+  elif [[ -n "$(printenv DISPLAY 2>/dev/null || true)" ]] && command -v xsel >/dev/null 2>&1; then
     ssh -n -F "$CFG" monitoring \
       'cat /home/ubuntu/dsy1107-ep5/monitoring/secrets/grafana_password.txt' |
       xsel --clipboard --input
@@ -338,6 +338,9 @@ codigo_y_config() {
   echo "--- Configuracion no sensible del broker (retencion por defecto si aplica) ---"
   ssh -n -F "$CFG" kafka2 \
     'sudo -n docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" dsy1107-broker-2 | grep -E "^KAFKA_(BROKER_ID|MIN_INSYNC_REPLICAS|DEFAULT_REPLICATION_FACTOR|LOG_RETENTION_HOURS|LOG_RETENTION_MS|LOG_RETENTION_BYTES|LOG_SEGMENT_BYTES)=" || true'
+  echo "--- Retencion efectiva del broker 2 (valores filtrados) ---"
+  ssh -n -F "$CFG" kafka2 \
+    'sudo -n docker exec dsy1107-broker-2 kafka-configs --bootstrap-server localhost:9092 --entity-type brokers --entity-name 2 --describe --all 2>/dev/null | grep -E "log[.]retention[.](ms|hours|minutes|bytes)|log[.]segment[.]bytes" || true'
   echo "Si no aparece retention.ms en el topico, hereda el valor del broker."
   echo
   echo "--- Grupo consumidor: asignacion, offset y lag ---"
