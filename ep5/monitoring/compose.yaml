@@ -1,0 +1,64 @@
+name: dsy1107-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.13.5
+    container_name: dsy1107-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.size=1GB
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    mem_limit: 650m
+    security_opt:
+      - no-new-privileges:true
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.11.0
+    container_name: dsy1107-kafka-exporter
+    restart: unless-stopped
+    command:
+      - --kafka.server=172.31.91.91:9092
+      - --kafka.server=172.31.27.158:9092
+      - --kafka.version=3.6.2
+    expose:
+      - "9308"
+    mem_limit: 260m
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    container_name: dsy1107-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000/
+    secrets:
+      - grafana_password
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    mem_limit: 650m
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+secrets:
+  grafana_password:
+    file: ./secrets/grafana_password.txt
