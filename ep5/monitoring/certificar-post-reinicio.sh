@@ -141,6 +141,29 @@ ACTUAL=$(curl -fsS -m 5 -H "X-aws-ec2-metadata-token: $TOKEN" \
 [[ "$ACTUAL" == "i-0e3af62685c90f028" ]]
 echo "IDENTIDAD_MONITORING_POSTBOOT=OK"
 
+echo "--- Esperar inicializacion automatica de Docker y contenedores ---"
+SERVICIOS_LISTOS=0
+for intento in $(seq 1 50); do
+  listo=1
+  for unit in containerd.service docker.service; do
+    [[ "$(systemctl is-active "$unit" 2>/dev/null || true)" == "active" ]] || listo=0
+  done
+  for name in dsy1107-prometheus dsy1107-grafana dsy1107-kafka-exporter; do
+    [[ "$(sudo -n docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null || true)" == "true" ]] || listo=0
+  done
+  if [[ "$listo" == "1" ]]; then
+    SERVICIOS_LISTOS=1
+    break
+  fi
+  if (( intento % 10 == 0 )); then
+    echo "ESPERANDO_CONTENEDORES_POSTBOOT=$intento/50"
+  fi
+  sleep 3
+done
+[[ "$SERVICIOS_LISTOS" == "1" ]] || {
+  echo "ERROR: Docker o contenedores no recuperados"; exit 1;
+}
+
 for unit in containerd.service docker.service; do
   [[ "$(systemctl is-active "$unit")" == "active" ]] || {
     echo "ERROR: servicio detenido: $unit"; exit 1;
