@@ -128,7 +128,7 @@ check_http() {
   curl -fsS --max-time 5 "http://127.0.0.1:$port$path" >/dev/null 2>&1
 }
 start_tunnel() {
-  local port="$1" remote="$2" target="$3" path="$4"
+  local port="$1" remote_host="$2" remote_port="$3" target="$4" path="$5"
   if check_http "$port" "$path"; then
     echo "PUERTO_$port=YA_OPERATIVO"
     return 0
@@ -137,7 +137,7 @@ start_tunnel() {
     echo "ERROR: puerto local $port ocupado por otro servicio"; return 1
   fi
   ssh -N -F "$CFG" -o ExitOnForwardFailure=yes \
-    -L "127.0.0.1:$port:127.0.0.1:$remote" \
+    -L "127.0.0.1:$port:$remote_host:$remote_port" \
     "$target" > "$TMP/ssh-$port.log" 2>&1 &
   local pid=$!
   PIDS="$PIDS $pid"
@@ -153,7 +153,7 @@ start_tunnel() {
     fi
     sleep 1
   done
-  echo "ERROR: no responde la interfaz $target:$remote"
+  echo "ERROR: no responde la interfaz $remote_host:$remote_port via $target"
   cat "$TMP/ssh-$port.log"
   return 1
 }
@@ -161,8 +161,10 @@ start_tunnel() {
 abrir_interfaces() {
   echo
   echo "=== Abrir Kafka UI y Grafana por tuneles SSH privados ==="
-  start_tunnel 18080 8080 kafka1 /
-  start_tunnel 3000 3000 monitoring /api/health
+  # Kafka UI esta publicado en Kafka-1:8080, accesible por la red privada
+  # desde APP. Kafka-1 localhost:8080 NO acepta conexiones en esta instalacion.
+  start_tunnel 18080 172.31.91.91 8080 app /
+  start_tunnel 3000 127.0.0.1 3000 monitoring /api/health
   echo "KAFKA_UI=http://127.0.0.1:18080"
   echo "GRAFANA=http://127.0.0.1:3000/d/dsy1107-kafka-ep5"
   echo "GRAFANA_USUARIO=admin"
@@ -374,7 +376,7 @@ while true; do
   echo "------------------------------------------"
   read -r -p 'Elige [1-5]: ' OPCION || break
   case "$OPCION" in
-    1) abrir_interfaces ;;
+    1) abrir_interfaces || echo "INTERFACES_ABIERTAS=NO; revisa el error anterior y vuelve a intentar" ;;
     2) editar_nueva ;;
     3) editar_duplicado ;;
     4) codigo_y_config ;;
