@@ -35,7 +35,7 @@ echo "Este programa NO reinicia EC2, Kafka ni Streams."
 echo "Solo envia eventos de ejemplo cuando confirmes PUBLICAR."
 echo
 
-for tool in aws ssh ssh-keygen python3 curl kate; do
+for tool in aws ssh ss python3 curl kate firefox; do
   command -v "$tool" >/dev/null || {
     echo "ERROR: falta el comando $tool"; exit 1;
   }
