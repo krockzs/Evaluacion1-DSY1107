@@ -71,8 +71,14 @@ produce() {
 }
 
 read_aggregates() {
-  k2 'sudo -n docker exec dsy1107-broker-2 kafka-console-consumer --bootstrap-server localhost:9092 --topic ventas-agregadas --from-beginning --consumer-property isolation.level=read_committed --timeout-ms 3000' \
-    > "$TMP/aggregated.jsonl" 2> "$TMP/consumer.log" || true
+  # Asignacion explicita: no crear un consumer group efimero en cada lectura.
+  # --offset earliest permite leer desde el comienzo de cada particion.
+  : > "$TMP/aggregated.jsonl"
+  : > "$TMP/consumer.log"
+  for partition in 0 1; do
+    k2 "sudo -n docker exec dsy1107-broker-2 kafka-console-consumer --bootstrap-server localhost:9092 --topic ventas-agregadas --partition $partition --offset earliest --consumer-property isolation.level=read_committed --timeout-ms 6500" \
+      >> "$TMP/aggregated.jsonl" 2>> "$TMP/consumer.log" || true
+  done
 }
 
 check_aggregates() {
@@ -110,9 +116,8 @@ PY_CHECK
 
 wait_for() {
   local count="$1" total="$2"
-  # Esperar con margen para recuperacion transaccional y rebalanceos.
-  # Cada lectura es independiente, sin modificar offsets del grupo Streams.
-  for attempt in $(seq 1 60); do
+  # Lectura directa de las dos particiones; no provoca rebalanceos de grupos.
+  for attempt in $(seq 1 12); do
     read_aggregates
     if check_aggregates "$count" "$total" > "$TMP/check.log" 2>&1; then
       echo "AGREGACION_CONFIRMADA_INTENTO=$attempt"
@@ -120,7 +125,7 @@ wait_for() {
       return 0
     fi
     if (( attempt % 5 == 0 )); then
-      echo "ESPERANDO_AGREGACION_INTENTO=$attempt/60"
+      echo "ESPERANDO_AGREGACION_INTENTO=$attempt/12"
       echo "SALIDAS_VISIBLES=$(wc -l < "$TMP/aggregated.jsonl")"
     fi
     sleep 2
@@ -153,6 +158,29 @@ ISR=$(printf '%s\n' "$DESCRIBE" | awk '/Partition:/ && /Isr: (1,2|2,1)([[:space:
 [[ "$ISR" == "4" ]] || { echo "ERROR: ISR inicial incompleto"; exit 1; }
 echo "STREAMS_INICIAL=ACTIVE"
 echo "ISR_RAW=4/4"
+
+echo
+echo "=== VERIFICAR LECTOR CON UNA VENTA YA CERTIFICADA ==="
+read_aggregates
+python3 - "$TMP/aggregated.jsonl" <<'PY_PREFLIGHT'
+import json
+import sys
+
+known = "TIENDA-AUD-20261121202547"
+found = False
+with open(sys.argv[1], encoding="utf-8") as source:
+    for line in source:
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(item, dict) and item.get("store") == known:
+            found = True
+            break
+assert found, "El lector no ve la venta de auditoria anterior: cancelar antes de publicar"
+print("LECTOR_PARTICIONES=OK")
+print("LECTURA_REFERENCIA_CERTIFICADA=OK")
+PY_PREFLIGHT
 
 echo
 echo "=== 2. VENTA ORIGINAL ==="
