@@ -178,7 +178,16 @@ abrir_interfaces() {
       xsel --clipboard --input
     echo "GRAFANA_CLAVE=PORTAPAPELES"
   else
-    echo "GRAFANA_CLAVE=usar acceso previo o abrir-grafana.sh en otra terminal"
+    echo "GRAFANA_CLAVE=sin herramienta de portapapeles"
+    local decision
+    read -r -p 'Mostrar clave solo en esta terminal? (s/N): ' decision
+    if [[ "$decision" == "s" ]]; then
+      local password
+      password=$(ssh -n -F "$CFG" monitoring \
+        'cat /home/ubuntu/dsy1107-ep5/monitoring/secrets/grafana_password.txt')
+      printf '\nGRAFANA_ADMIN_PASSWORD (no compartir): %s\n\n' "$password" >/dev/tty
+      unset password
+    fi
   fi
   firefox 'http://127.0.0.1:18080' >/dev/null 2>&1 &
   firefox 'http://127.0.0.1:3000/d/dsy1107-kafka-ep5' >/dev/null 2>&1 &
