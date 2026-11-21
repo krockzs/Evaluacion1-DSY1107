@@ -88,7 +88,7 @@ PY_PRESENT
 then
   echo "REGLA_PRIVADA_YA_EXISTE=OK"
 else
-  echo "AUTORIZANDO_TPC_9092_DESDE_MONITORING..."
+  echo "AUTORIZANDO_TCP_9092_DESDE_MONITORING..."
   aws ec2 authorize-security-group-ingress \
     --profile pedidos360 --region us-east-1 \
     --group-id "$BROKER_SG" --protocol tcp --port 9092 \
