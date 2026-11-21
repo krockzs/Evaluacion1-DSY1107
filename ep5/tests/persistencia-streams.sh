@@ -110,17 +110,31 @@ PY_CHECK
 
 wait_for() {
   local count="$1" total="$2"
-  for attempt in $(seq 1 16); do
+  # Esperar con margen para recuperacion transaccional y rebalanceos.
+  # Cada lectura es independiente, sin modificar offsets del grupo Streams.
+  for attempt in $(seq 1 60); do
     read_aggregates
     if check_aggregates "$count" "$total" > "$TMP/check.log" 2>&1; then
+      echo "AGREGACION_CONFIRMADA_INTENTO=$attempt"
       cat "$TMP/check.log"
       return 0
     fi
+    if (( attempt % 5 == 0 )); then
+      echo "ESPERANDO_AGREGACION_INTENTO=$attempt/60"
+      echo "SALIDAS_VISIBLES=$(wc -l < "$TMP/aggregated.jsonl")"
+    fi
     sleep 2
   done
-  echo "ERROR: agregacion no alcanzo los valores esperados"
+  echo "ERROR: agregacion no alcanzo los valores esperados tras ampliar la espera"
   cat "$TMP/check.log"
+  echo "ULTIMAS_SALIDAS:"
   tail -10 "$TMP/aggregated.jsonl" || true
+  echo "CONSUMER_STDERR:"
+  tail -5 "$TMP/consumer.log" || true
+  echo "ESTADO_STREAMS:"
+  app 'systemctl is-active dsy1107-ventas-streams.service' || true
+  echo "GRUPO_CONSUMIDOR:"
+  k2 'sudo -n docker exec dsy1107-broker-2 kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group dsy1107-ventas-streams --state' || true
   return 1
 }
 
