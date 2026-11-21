@@ -313,6 +313,7 @@ codigo_y_config() {
   echo
   echo "=== CODIGO Y CONFIGURACION DE LA RUBRICA EP6 ==="
   kate \
+    "$ROOT/ep6/ARQUITECTURA_IMPLEMENTADA.md" \
     "$ROOT/ep5/app/streams/src/main/java/cl/duoc/dsy1107/streams/VentasStreams.java" \
     "$ROOT/ep5/app/streams/src/test/java/cl/duoc/dsy1107/streams/VentasStreamsTest.java" \
     "$ROOT/ep5/app/producer/src/main/java/cl/duoc/dsy1107/producer/VentasProducer.java" \
