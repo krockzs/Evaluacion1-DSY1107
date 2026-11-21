@@ -230,13 +230,12 @@ done
 sudo -n docker ps --format \
   'CONTENEDOR={{.Names}} PUERTOS={{.Ports}}'
 
-for target in 3000 9090; do
-  curl -fsS --max-time 6 \
-    "http://127.0.0.1:$target/api/health" >/dev/null 2>&1 ||
-    [[ "$target" == "9090" ]] || {
-      echo "ERROR: salud Grafana"; exit 1;
-    }
-done
+curl -fsS --max-time 6 \
+  http://127.0.0.1:3000/api/health >/dev/null
+curl -fsS --max-time 6 \
+  http://127.0.0.1:9090/-/ready >/dev/null
+echo "GRAFANA_HTTP=OK"
+echo "PROMETHEUS_HTTP=OK"
 
 echo "MONITORING_DASHBOARD=OK"
 REMOTE_DEPLOY
