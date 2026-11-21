@@ -281,7 +281,7 @@ ultimo() {
 }
 
 main() {
-  local cmd="$1"
+  local cmd="${1:-ayuda}"
   case "$cmd" in
     ayuda|-h|--help) ayuda ;;
     estado) status_ec2 ;;
@@ -296,7 +296,7 @@ main() {
     ssh-kafka1) setup_ssh; ssh -F "$CFG" kafka1 ;;
     ssh-kafka2) setup_ssh; ssh -F "$CFG" kafka2 ;;
     ssh-monitoring) setup_ssh; ssh -F "$CFG" monitoring ;;
-    prueba) prueba "$2" ;;
+    prueba) prueba "${2:-}" ;;
     ultimo) ultimo ;;
     *) echo "ERROR: comando desconocido: $cmd"; ayuda; exit 2 ;;
   esac
